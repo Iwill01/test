@@ -80,7 +80,7 @@
       currentCode = code;
       document.getElementById("message").innerText = "Verifying...";
 
-      const res = await fetch("http://127.0.0.1:5000/verify", {
+      const res = await fetch("http://voting-backend:5000/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code })
@@ -112,7 +112,7 @@
     }
 
     async function castVote(choice) {
-      const res = await fetch("http://127.0.0.1:5000/vote", {
+      const res = await fetch("http://voting-backend:5000/vote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ choice })
@@ -125,7 +125,7 @@
     }
 
     async function updateLiveVotes() {
-      const res = await fetch("http://127.0.0.1:5000/stats", {
+      const res = await fetch("http://voting-backend:5000/stats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: currentCode })

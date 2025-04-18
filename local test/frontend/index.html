@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Voting Booth</title>
+  <style>
+    body {
+      background: linear-gradient(to right, #5f2c82, #49a09d);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: white;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    .card {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      width: 300px;
+      text-align: center;
+    }
+    input[type="text"] {
+      padding: 0.5rem;
+      width: 100%;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+    }
+    button {
+      padding: 0.7rem;
+      width: 100%;
+      border: none;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-weight: bold;
+      background: #ffcc00;
+      cursor: pointer;
+    }
+    .vote-buttons button {
+      width: 45%;
+      margin: 5px;
+      background: #00c9a7;
+    }
+    .result {
+      margin-top: 1rem;
+      white-space: pre-line;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Cast Your Vote</h1>
+    <input type="text" id="codeInput" placeholder="Enter your code" />
+    <button onclick="verifyCode()">Verify</button>
+
+    <div id="voteSection" style="display:none">
+      <div class="vote-buttons">
+        <button onclick="castVote('A')">Vote A</button>
+        <button onclick="castVote('B')">Vote B</button>
+      </div>
+    </div>
+
+    <div class="result" id="message"></div>
+    <div class="result" id="liveVotes"></div>
+  </div>
+
+  <script>
+    let currentCode = "";
+    let timer = null;
+
+    async function verifyCode() {
+      const code = document.getElementById("codeInput").value;
+      currentCode = code;
+      document.getElementById("message").innerText = "Verifying...";
+
+      const res = await fetch("http://127.0.0.1:5000/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code })
+      });
+      const data = await res.json();
+
+      if (data.admin) {
+        document.getElementById("message").innerText =
+          `Admin Access\nVotes:\nA: ${data.votes.A} | B: ${data.votes.B}\nWinner: ${data.winner}`;
+        updateLiveVotes(); // admin gets full stats
+        return;
+      }
+
+      if (data.success) {
+        document.getElementById("message").innerText = data.message;
+        document.getElementById("voteSection").style.display = "block";
+
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          document.getElementById("voteSection").style.display = "none";
+          document.getElementById("message").innerText = "Code expired. Re-enter to vote again.";
+        }, 10000);
+
+        updateLiveVotes(); // user gets partial stats
+      } else {
+        document.getElementById("voteSection").style.display = "none";
+        document.getElementById("message").innerText = data.message;
+      }
+    }
+
+    async function castVote(choice) {
+      const res = await fetch("http://127.0.0.1:5000/vote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ choice })
+      });
+      const data = await res.json();
+
+      document.getElementById("message").innerText = data.message;
+      document.getElementById("voteSection").style.display = "none";
+      updateLiveVotes();
+    }
+
+    async function updateLiveVotes() {
+      const res = await fetch("http://127.0.0.1:5000/stats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: currentCode })
+      });
+
+      const data = await res.json();
+      let msg = `Total Votes Casted: ${data.total_votes} (${data.percent_casted}%)`;
+
+      if (data.percent_A !== undefined && data.percent_B !== undefined) {
+        msg += `\nA: ${data.percent_A}% | B: ${data.percent_B}%`;
+      }
+
+      document.getElementById("liveVotes").innerText = msg;
+    }
+  </script>
+</body>
+</html>

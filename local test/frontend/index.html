@@ -112,7 +112,7 @@
     }
 
     async function castVote(choice) {
-      const res = await fetch("http://13.127.22.184/vote", {
+      const res = await fetch("http://13.127.22.184:5000/vote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ choice })
